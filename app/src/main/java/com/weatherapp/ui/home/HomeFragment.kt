@@ -210,9 +210,11 @@ class HomeFragment : Fragment(), View.OnClickListener {
 
             R.id.search_city -> activity?.let {
                 try{
-                    findLocationClass.search(enterCity.text.toString(),
+                    val coordinates = findLocationClass.search(
+                        enterCity.text.toString(),
                         it
                     )
+                    loadWeather(coordinates)
                 } catch (e : Exception){
                     e.message?.let { it1 -> showSnackBar(it1) }
                 }
