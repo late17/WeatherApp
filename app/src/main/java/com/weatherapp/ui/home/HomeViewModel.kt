@@ -16,9 +16,21 @@ import javax.inject.Inject
 class HomeViewModel @Inject constructor(private val weatherInterface: WeatherInterface) :
     ViewModel() {
 
+     val errorText: String
+        get() = errorText()
+
+    private fun errorText(): String {
+        return when(fiveDayWeather.value.status){
+            Resource.Status.SUCCESS -> ""
+            Resource.Status.LOADING -> ""
+            Resource.Status.FAILED -> "Connection Problem"
+            Resource.Status.PENDING -> "Please enter city or enable GPS"
+        }
+    }
+
     private var _coordinates = MutableStateFlow<Resource<Coordinates>>(Resource.pending())
 
-    val coordinates: StateFlow<Resource<Coordinates>>
+    private val coordinates: StateFlow<Resource<Coordinates>>
         get() = _coordinates
 
     private var _fiveDayWeather = MutableStateFlow<Resource<FiveDayWeather>>(Resource.pending())

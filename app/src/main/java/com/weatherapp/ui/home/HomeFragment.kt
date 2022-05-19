@@ -1,8 +1,6 @@
 package com.weatherapp.ui.home
 
 import android.Manifest
-import android.annotation.SuppressLint
-import android.location.Geocoder
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -24,7 +22,7 @@ import com.google.android.material.snackbar.Snackbar
 import com.karumi.dexter.Dexter
 import com.karumi.dexter.listener.single.DialogOnDeniedPermissionListener
 import com.weatherapp.R
-import com.weatherapp.app.adapter.WeatherAdapter
+import com.weatherapp.app.location.FindLocationClass
 import com.weatherapp.app.mappers.toThreeHourModel
 import com.weatherapp.app.resource.Resource
 import com.weatherapp.data.dto.FiveDayWeather
@@ -35,6 +33,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import java.util.*
+import javax.inject.Inject
 
 
 @AndroidEntryPoint
@@ -43,6 +42,8 @@ class HomeFragment : Fragment(), View.OnClickListener {
     private var _binding: FragmentHomeBinding? = null
     private val binding get() = _binding!!
 
+    @Inject
+    lateinit var findLocationClass: FindLocationClass
     private val viewModel: HomeViewModel by viewModels()
 
     private lateinit var city: TextView
@@ -58,7 +59,7 @@ class HomeFragment : Fragment(), View.OnClickListener {
         savedInstanceState: Bundle?
     ): View {
         _binding = FragmentHomeBinding.inflate(inflater, container, false)
-        activity?.title = "Home"
+        askPermissionAndTryToUpdateLocation()
         initViews()
         showContent()
         return binding.root
@@ -87,22 +88,26 @@ class HomeFragment : Fragment(), View.OnClickListener {
                         it.data?.let { fiveDayWeather ->
                             showSuccess(fiveDayWeather)
                         }
+                        connectionProblem.text = viewModel.errorText
                     }
                     Resource.Status.LOADING -> {
                         showLoading()
+                        connectionProblem.text = viewModel.errorText
                     }
                     Resource.Status.FAILED -> {
                         showFailed()
+                        connectionProblem.text = viewModel.errorText
                     }
                     Resource.Status.PENDING -> {
                         showPending()
+                        connectionProblem.text = viewModel.errorText
                     }
                 }
             }
         }
+
     }
 
-    @SuppressLint("SetTextI18n")
     private fun showSuccess(fiveDayWeather: FiveDayWeather) {
         val listOfWeather = ArrayList<ThreeHourModel>()
 
@@ -119,51 +124,51 @@ class HomeFragment : Fragment(), View.OnClickListener {
 
         connectionProblem.visibility = GONE
         progressBar.visibility = GONE
-        connectionProblem.text = "Connection Problem"
 
     }
 
-    @SuppressLint("SetTextI18n")
     private fun showPending() {
         connectionProblem.visibility = VISIBLE
-        connectionProblem.text = "Enter City or enable GPS"
         progressBar.visibility = GONE
     }
 
-    @SuppressLint("SetTextI18n")
     private fun showFailed() {
         connectionProblem.visibility = VISIBLE
         progressBar.visibility = GONE
-        connectionProblem.text = "Connection Problem"
     }
 
-    @SuppressLint("SetTextI18n")
     private fun showLoading() {
         connectionProblem.visibility = GONE
         progressBar.visibility = VISIBLE
-        connectionProblem.text = "Connection Problem"
     }
 
-    private fun askToChooseCity() {
+    private fun showSnackBar(string: String) {
         view?.let {
             val snackBar =
                 Snackbar.make(
                     it,
-                    "Please enter your city or enable GPS",
+                    string,
                     Snackbar.LENGTH_SHORT
                 )
             snackBar.show()
         }
     }
+    private fun askPermissionAndTryToUpdateLocation() {
+        val listener = DialogOnDeniedPermissionListener.Builder
+            .withContext(activity)
+            .withTitle("Location")
+            .withMessage("We can autodetect your city")
+            .build()
 
-    private fun loadWeather(coordinates: Coordinates) {
-        viewModel.updateCoordinates(
-            coordinates
-        )
-        viewModel.loadData()
+        Dexter.withContext(activity)
+            .withPermission(Manifest.permission.ACCESS_COARSE_LOCATION)
+            .withListener(listener)
+            .check()
+
+        takeLocationFromAndroid()
     }
 
-    private fun takeCoordinatesFromAndroid() {
+    private fun takeLocationFromAndroid() {
         activity?.let {
             if (
                 ContextCompat.checkSelfPermission(
@@ -185,48 +190,36 @@ class HomeFragment : Fragment(), View.OnClickListener {
                 }
 
                 task.addOnFailureListener {
-                    askToChooseCity()
+                    showSnackBar("Please enter your city or enable GPS")
                 }
             }
         }
     }
 
-    private fun askPermission() {
-        val listener = DialogOnDeniedPermissionListener.Builder
-            .withContext(activity)
-            .withTitle("Location")
-            .withMessage("We can autodetect your city")
-            .build()
-
-        Dexter.withContext(activity)
-            .withPermission(Manifest.permission.ACCESS_COARSE_LOCATION)
-            .withListener(listener)
-            .check()
-
-        takeCoordinatesFromAndroid()
+    private fun loadWeather(coordinates: Coordinates) {
+        viewModel.updateCoordinates(
+            coordinates
+        )
+        viewModel.loadData()
     }
 
     override fun onClick(p0: View?) {
         when (p0?.id) {
             R.id.switch_to_search_city -> cityViewFlipper.displayedChild = 1
             R.id.btn_switch_to_show_city -> cityViewFlipper.displayedChild = 0
-            R.id.search_city -> search(enterCity.text.toString())
-            R.id.enable_gps -> askPermission()
-        }
-    }
 
-    private fun search(string: String) {
-        val geocoder = Geocoder(activity, Locale.getDefault())
-        val fromLocationName = geocoder.getFromLocationName(string, 1)
-        if (fromLocationName.isNotEmpty()) {
-            loadWeather(
-                Coordinates(
-                    fromLocationName[0].latitude.toInt().toString(),
-                    fromLocationName[0].longitude.toInt().toString()
-                )
-            )
-        }
+            R.id.search_city -> activity?.let {
+                try{
+                    findLocationClass.search(enterCity.text.toString(),
+                        it
+                    )
+                } catch (e : Exception){
+                    e.message?.let { it1 -> showSnackBar(it1) }
+                }
+            }
 
+            R.id.enable_gps -> askPermissionAndTryToUpdateLocation()
+        }
     }
 
 }

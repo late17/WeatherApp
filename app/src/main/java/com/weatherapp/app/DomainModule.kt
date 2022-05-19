@@ -1,5 +1,6 @@
 package com.weatherapp.app
 
+import com.weatherapp.app.location.FindLocationClass
 import com.weatherapp.data.remote.RemoteDataSource
 import com.weatherapp.data.remote.RetrofitApi
 import com.weatherapp.data.remote.RetrofitClient
@@ -22,6 +23,15 @@ class DomainModule {
     @Provides
     fun providesWeatherInterface() : WeatherInterface{
         return WeatherUseCases(providesRemoteDataSource())
+    }
+
+    //
+    //------------TOOLS------------
+    //
+    @Singleton
+    @Provides
+    fun providesFindLocationClass():FindLocationClass{
+        return FindLocationClass()
     }
     //
     //-----------REMOTE------------

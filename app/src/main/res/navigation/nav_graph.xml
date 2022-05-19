@@ -7,6 +7,7 @@
     app:startDestination="@id/homeFragment">
     <fragment
         android:id="@+id/homeFragment"
+        android:label="Weather App"
         android:name="com.weatherapp.ui.home.HomeFragment"
         tools:layout="@layout/fragment_home" />
 </navigation>
