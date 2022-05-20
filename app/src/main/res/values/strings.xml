@@ -16,4 +16,5 @@
     <string name="enter_your_city">Enter your city</string>
     <string name="switch_back_to_show_city">Switch back to show city</string>
     <string name="connection_problem">Connection problem</string>
+    <string name="choose_point">Choose point on a map</string>
 </resources>

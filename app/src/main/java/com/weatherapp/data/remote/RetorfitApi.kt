@@ -6,13 +6,12 @@ import retrofit2.http.GET
 import retrofit2.http.Query
 
 interface RetrofitApi {
-
     @GET("forecast?")
     suspend fun getFiveDayWeather(
         @Query("lat")
-        latitude : String,
+        latitude : Double,
         @Query("lon")
-        longitude : String,
+        longitude : Double,
     ):Response<FiveDayWeather>
 
 }

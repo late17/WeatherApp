@@ -12,8 +12,8 @@ class FindLocationClass {
         val fromLocationName = geocoder.getFromLocationName(string, 1)
         if (fromLocationName.isNotEmpty()) {
             return Coordinates(
-                fromLocationName[0].latitude.toInt().toString(),
-                fromLocationName[0].longitude.toInt().toString()
+                fromLocationName[0].latitude,
+                fromLocationName[0].longitude
             )
         } else throw Exception("Did not find location :(")
     }

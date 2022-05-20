@@ -12,7 +12,7 @@ import javax.inject.Inject
 class RemoteDataSource @Inject constructor(private val retrofitApi: RetrofitApi) :
     BaseDataSource() {
 
-    suspend fun getFiveDayWeather(coordinates: Coordinates)
-        = getResult { retrofitApi.getFiveDayWeather(coordinates.latitude, coordinates.longitude) }
+    suspend fun getFiveDayWeather(latitude: Double, longitude : Double)
+        = getResult { retrofitApi.getFiveDayWeather(latitude, longitude) }
 
 }
