@@ -1,6 +1,7 @@
 package com.weatherapp.ui.home
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -16,6 +17,7 @@ import androidx.core.content.PermissionChecker
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.Navigation
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.gms.location.LocationServices
 import com.google.android.material.snackbar.Snackbar
@@ -32,7 +34,6 @@ import com.weatherapp.databinding.FragmentHomeBinding
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import java.util.*
 import javax.inject.Inject
 
 
@@ -59,11 +60,19 @@ class HomeFragment : Fragment(), View.OnClickListener {
         savedInstanceState: Bundle?
     ): View {
         _binding = FragmentHomeBinding.inflate(inflater, container, false)
-        askPermissionAndTryToUpdateLocation()
+        val coordinates: Coordinates? = arguments?.getSerializable("coordinates") as Coordinates?
+        if (coordinates != null) {
+            viewModel.updateCoordinates(coordinates)
+            viewModel.loadData()
+        } else {
+            askPermissionAndTryToUpdateLocation()
+        }
+
         initViews()
         showContent()
         return binding.root
     }
+
 
     private fun initViews() {
         connectionProblem = binding.connectionProblemHome
@@ -78,6 +87,8 @@ class HomeFragment : Fragment(), View.OnClickListener {
         binding.chooseCity.btnSwitchToShowCity.setOnClickListener(this)
         binding.chooseCity.searchCity.setOnClickListener(this)
         binding.chooseCity.enableGps.setOnClickListener(this)
+        binding.chooseCity.openMap.setOnClickListener(this)
+
     }
 
     private fun showContent() {
@@ -168,6 +179,7 @@ class HomeFragment : Fragment(), View.OnClickListener {
         takeLocationFromAndroid()
     }
 
+    @SuppressLint("MissingPermission")
     private fun takeLocationFromAndroid() {
         activity?.let {
             if (
@@ -183,8 +195,8 @@ class HomeFragment : Fragment(), View.OnClickListener {
                 task.addOnSuccessListener { location ->
                     loadWeather(
                         Coordinates(
-                            location.latitude.toInt().toString(),
-                            location.longitude.toInt().toString()
+                            location.latitude,
+                            location.longitude
                         )
                     )
                 }
@@ -200,6 +212,7 @@ class HomeFragment : Fragment(), View.OnClickListener {
         viewModel.updateCoordinates(
             coordinates
         )
+
         viewModel.loadData()
     }
 
@@ -208,19 +221,24 @@ class HomeFragment : Fragment(), View.OnClickListener {
             R.id.switch_to_search_city -> cityViewFlipper.displayedChild = 1
             R.id.btn_switch_to_show_city -> cityViewFlipper.displayedChild = 0
 
-            R.id.search_city -> activity?.let {
-                try{
-                    val coordinates = findLocationClass.search(
-                        enterCity.text.toString(),
-                        it
-                    )
-                    loadWeather(coordinates)
-                } catch (e : Exception){
-                    e.message?.let { it1 -> showSnackBar(it1) }
+            R.id.search_city ->
+
+                activity?.let {
+                    try {
+                        val coordinates = findLocationClass.search(
+                            enterCity.text.toString(),
+                            it
+                        )
+                        loadWeather(coordinates)
+                    } catch (e: Exception) {
+                       showSnackBar("Failed to find this city")
+                    }
                 }
-            }
 
             R.id.enable_gps -> askPermissionAndTryToUpdateLocation()
+            R.id.open_map ->
+                Navigation.findNavController(requireView()).navigate(R.id.action_homeFragment_to_mapsFragment)
+
         }
     }
 

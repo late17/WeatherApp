@@ -1,5 +1,6 @@
 package com.weatherapp.ui.home
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.weatherapp.app.resource.Resource
@@ -41,7 +42,8 @@ class HomeViewModel @Inject constructor(private val weatherInterface: WeatherInt
     fun loadData() = viewModelScope.launch {
         _fiveDayWeather.value = Resource.loading()
         coordinates.value.data?.let {
-            _fiveDayWeather.value = weatherInterface.getFiveDayWeather(it)
+            val asdf = weatherInterface.getFiveDayWeather(it)
+            _fiveDayWeather.value = asdf
         }
     }
 

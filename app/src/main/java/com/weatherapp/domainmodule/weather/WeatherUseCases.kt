@@ -8,6 +8,6 @@ import javax.inject.Inject
 
 class WeatherUseCases @Inject constructor(private val remoteDataSource: RemoteDataSource) : WeatherInterface {
     override suspend fun getFiveDayWeather(coordinates: Coordinates): Resource<FiveDayWeather> {
-        return remoteDataSource.getFiveDayWeather(coordinates)
+        return remoteDataSource.getFiveDayWeather(coordinates.latitude, coordinates.longitude)
     }
 }
